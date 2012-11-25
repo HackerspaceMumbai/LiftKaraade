@@ -105,18 +105,25 @@ app.post('/api/name',function(req,res){
 app.post('/api/wants', function (req, res) {
   var want;
   want = new WantModel(req.body);
+  console.log("Want :   ")
   console.log(want);
   if(want.user.handle == null || want.user.handle == '' ){
     tweets.getUserName(want.user,function(error,data){
-      want.user.handle = data["screen_name"]
-      want.update_user('Want',want,req,res,function(err,want){
-        if (!err) {
-          console.log("waant");
-          res.send(want)
-        } else {
-          res.send(err);
-        }
-      });
+      if (!error) {
+        want.user.handle = data["screen_name"]
+        want.update_user('Want',want,req,res,function(err,want){
+          if (!err) {
+            console.log("waant");
+            res.send(want)
+          } else {
+            res.send(err);
+          }
+        });
+      } 
+      else {
+                    console.log(error);
+        res.send(error);
+      }
     });
   }
   else{
@@ -157,19 +164,26 @@ app.post('/api/tweet',function(req,res){
 app.post('/api/gives', function (req, res) {
   var give;
   give = new GiveModel(req.body);
-
+  console.log("Give :   ")
+console.log(give)
   give = new GiveModel(req.body);
   if(give.user.handle == null || give.user.handle == ''){
     tweets.getUserName(give.user,function(error,data){
-      give.user.handle = data["screen_name"]
-      give.update_user('Give',give,req,res,function(err,fakirs){
-        if (!err) {
-          console.log(fakirs)
-        } else {
-          console.log(err);
-        }
-        getfakirs(give,res);
-      });
+      console.log(error)
+      console.log(data)
+      if (!error) {
+        give.user.handle = data["screen_name"]
+        give.update_user('Give',give,req,res,function(err,fakirs){
+          if (!err) {
+            console.log(fakirs)
+          } else {
+            console.log(err);
+          }
+          getfakirs(give,res);
+        }); 
+      } else {
+        res.send(error);
+      }
     });
   }
   else{
