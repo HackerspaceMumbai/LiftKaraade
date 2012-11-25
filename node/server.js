@@ -43,13 +43,9 @@ created_at: { type: Date, default: Date.now ,index: '1'}
 object.methods.findNearByFakirs = function(cb) {
   var start = new Date().subHours(1);
   var end = new Date();
-  return this.model('Give').find({loc: { $nearSphere: this.loc, $maxDistance: 1} , created_at: {$gte: start, $lt: end} }, cb);
- // return GiveModel.where('age').gte(new Date()).lte(new Date().subHours(1)).near([loc.lat, loc.long]).maxDistance(1).exec();
+  var a = this.model('Give').find({loc: { $near: [this.loc.lat,this.loc.long], $maxDistance: 1} , created_at: {$gte: start, $lt: end} }, cb);
+  // return GiveModel.find({ loc :{$near: [this.loc.lat,this.loc.long],$maxDistance : 5 },timestamp:{$gte: start, $lt: end}},cb);
 };
-
-// object.methods.alreadyExistsinWant = function(cb) {
-//   return  cb);
-// }
 
 var WantModel = mongoose.model('Want', object);
 var GiveModel = mongoose.model('Give', object);
@@ -66,6 +62,7 @@ app.get('/api', function (req, res) {
 app.post('/api/wants', function (req, res) {
   var want;
   want = new WantModel(req.body);
+  console.log(want);
   WantModel.findOne({'user.handle': want.user.handle},function (err, wants) {
     if(wants ==  null ) {
       wants = new WantModel({
@@ -96,25 +93,50 @@ app.post('/api/wants', function (req, res) {
 });
 
 
-  // return res.send(wants.findNearByFakirs(wants));
+// return res.send(wants.findNearByFakirs(wants));
 
-  app.post('/api/gives', function (req, res) {
-    var wants;
-    console.log(req.body)
-    wants = new WantModel({
-      user: req.body.user,
-      loc: req.body.loc
-    });
-    console.log(wants)
-    wants.save(function (err) {
-      if (!err) {
-        return console.log("created");
-      } else {
-        return console.log(err);
-      }
-    });
-    return res.send(wants);
+app.post('/api/gives', function (req, res) {
+  var give;
+  give = new GiveModel(req.body);
+  GiveModel.findOne({'user.handle': give.user.handle},function (err, gives) {
+    if(gives ==  null ) {
+      gives = new GiveModel({
+        user: req.body.user,
+        loc: req.body.loc
+      });
+      gives.save(function (err) {
+        if (!err) {
+          return console.log(gives);
+        } else {
+          return console.log(err);
+        }
+      });
+    }
+    else
+    {
+      gives.created_at =  Date.now()
+      gives.loc = req.body.loc
+      gives.save(function (err) {
+        if (!err) {
+          // return console.log(gives);
+        } else {
+          return console.log(err);
+        }
+      });
+    }
+    var start = new Date().subHours(1);
+    var end = new Date();
+    gives.findNearByFakirs(
+      function(err,fakirs){
+        console.log(err);
+        if (!err) {
+          res.send(fakirs)
+        } else {
+          res.send(err)
+        }
+      });
   });
+});
 
 
 
