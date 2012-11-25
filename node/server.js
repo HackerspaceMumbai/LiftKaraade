@@ -4,6 +4,7 @@ path = require("path"),
 mongoose = require('mongoose'),
 tweets = require(path.join(application_root, "app/tweets")),
 OAuth= require('oauth').OAuth;
+var ObjectID = require('mongodb').ObjectID;
 
 
 Date.prototype.subHours= function(h){
@@ -46,13 +47,12 @@ created_at: { type: Date, default: Date.now ,index: '1'}
 object.methods.findNearByFakirs = function(cb) {
   var start = new Date().subHours(1);
   var end = new Date();
-  var a = this.model('Give').find({loc: { $near: [this.loc.lat,this.loc.lon], $maxDistance: 5} , created_at: {$gte: start, $lt: end} }, cb);
+  var a = this.model('Want').find({loc: { $near: [this.loc.lat,this.loc.lon], $maxDistance: 5} , created_at: {$gte: start, $lt: end} }, cb);
   // return GiveModel.find({ loc :{$near: [this.loc.lat,this.loc.lon],$maxDistance : 5 },timestamp:{$gte: start, $lt: end}},cb);
 };
 
 
 object.methods.update_user = function(model,want,req,res,cb){
-  console.log(want);
   this.model(model).findOne({'user.handle': want.user.handle},function (err, wants) {
     if(wants ==  null ) {
       want.save(function (err) {
@@ -67,6 +67,9 @@ object.methods.update_user = function(model,want,req,res,cb){
     {
       wants.created_at =  Date.now()
       wants.loc = req.body.loc
+      if(req.body.destination != null) {
+        wants.destination = req.body.destination
+      }
       wants.save(function (err) {
         if (!err) {
           cb(err,wants);
@@ -102,11 +105,13 @@ app.post('/api/name',function(req,res){
 app.post('/api/wants', function (req, res) {
   var want;
   want = new WantModel(req.body);
-  if(want.user.handle == null){
+  console.log(want);
+  if(want.user.handle == null || want.user.handle == '' ){
     tweets.getUserName(want.user,function(error,data){
       want.user.handle = data["screen_name"]
-      want.update_user('Give',want,req,res,function(err,want){
+      want.update_user('Want',want,req,res,function(err,want){
         if (!err) {
+          console.log("waant");
           res.send(want)
         } else {
           res.send(err);
@@ -117,6 +122,7 @@ app.post('/api/wants', function (req, res) {
   else{
     want.update_user('Want',want,req,res,function(err,want){
       if (!err) {
+        console.log("want");
         res.send(want)
       } else {
         res.send(err);
@@ -125,6 +131,27 @@ app.post('/api/wants', function (req, res) {
   }
 });
 
+app.post('/api/tweet',function(req,res){
+  var me = req.body.me
+  var to = req.body.to
+  GiveModel.findOne({'_id': new ObjectID(me)},function(error,give){
+    if (!error) {
+      WantModel.findOne({_id: new ObjectID(to)},function(error,want){
+        post = "@" + want.user.handle +  " aaja mere gaadi main baith jaa..!!"
+        tweets.postUpdate(give,post,function(err,post){
+          if (!err) {
+            res.send("success")
+          } else {
+            res.send(err);
+          }
+        });
+      });
+    } 
+    else {
+      res.send(error);
+    }
+  });
+});
 
 
 app.post('/api/gives', function (req, res) {
@@ -132,7 +159,7 @@ app.post('/api/gives', function (req, res) {
   give = new GiveModel(req.body);
 
   give = new GiveModel(req.body);
-  if(give.user.handle == null){
+  if(give.user.handle == null || give.user.handle == ''){
     tweets.getUserName(give.user,function(error,data){
       give.user.handle = data["screen_name"]
       give.update_user('Give',give,req,res,function(err,fakirs){
@@ -152,26 +179,24 @@ app.post('/api/gives', function (req, res) {
       } else {
         console.log(err);
       }
-        getfakirs(give,res);
+      getfakirs(give,res);
     });
   }
- 
 });
 
 
 var getfakirs = function(give,res){
-   var start = new Date().subHours(1);
-  var end = new Date();
-  give.findNearByFakirs(
-    function(err,fakirs){
-      if (!err) {
-        console.log(fakirs)
-        value = new Object({self: give ,fakirs: fakirs});
-        res.send(value)
-      } else {
-        res.send(err)
-      }
-    });
+ var start = new Date().subHours(1);
+ var end = new Date();
+ give.findNearByFakirs(
+  function(err,fakirs){
+    if (!err) {
+      value = new Object({me: give ,fakirs: fakirs});
+      res.send(value)
+    } else {
+      res.send(err)
+    }
+  });
 }
 
 

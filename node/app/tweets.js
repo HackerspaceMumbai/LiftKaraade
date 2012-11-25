@@ -16,7 +16,6 @@ exports.getUserName = function(oauth,cb){
 			console.log("Error getting OAuth request token : " + error);
 		} else {
 			twitter.verifyCredentials(oauth.authtoken, oauth.authsecret, function(error, data, response) {
-				console.log(error)
 				if (!error) {
 					cb(null,data);
 				} else {
@@ -36,7 +35,7 @@ exports.postUpdate = function(oauth,body,cb){
 			} else {
 				console.log('Twitter status updated.\n');
 				console.log(response+'\n')		}	
-				cd(null,response);
+				cb(null,response);
 			});
 };	
 
