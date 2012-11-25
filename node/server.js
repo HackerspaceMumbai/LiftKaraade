@@ -2,7 +2,9 @@ var application_root = __dirname,
 express = require("express"),
 path = require("path"),
 mongoose = require('mongoose'),
+tweets = require(path.join(application_root, "app/tweets")),
 OAuth= require('oauth').OAuth;
+
 
 Date.prototype.subHours= function(h){
   this.setHours(this.getHours()-h);
@@ -30,11 +32,12 @@ var object = new Schema({
  user: { 
   handle:{type: String,  unique: true},
   authtoken:{type: String,required: true},
-  authsecret:{type: String,required: true}
+  authsecret:{type: String,required: true},
+  authverifier:String,
 },
 loc: { 
   lat: { type: Number, required: true },
-  long: { type: Number, required: true }
+  lon: { type: Number, required: true }
 },
 destination :String,
 created_at: { type: Date, default: Date.now ,index: '1'}
@@ -43,9 +46,38 @@ created_at: { type: Date, default: Date.now ,index: '1'}
 object.methods.findNearByFakirs = function(cb) {
   var start = new Date().subHours(1);
   var end = new Date();
-  var a = this.model('Give').find({loc: { $near: [this.loc.lat,this.loc.long], $maxDistance: 1} , created_at: {$gte: start, $lt: end} }, cb);
-  // return GiveModel.find({ loc :{$near: [this.loc.lat,this.loc.long],$maxDistance : 5 },timestamp:{$gte: start, $lt: end}},cb);
+  var a = this.model('Give').find({loc: { $near: [this.loc.lat,this.loc.lon], $maxDistance: 5} , created_at: {$gte: start, $lt: end} }, cb);
+  // return GiveModel.find({ loc :{$near: [this.loc.lat,this.loc.lon],$maxDistance : 5 },timestamp:{$gte: start, $lt: end}},cb);
 };
+
+
+object.methods.update_user = function(model,want,req,res,cb){
+  console.log(want);
+  this.model(model).findOne({'user.handle': want.user.handle},function (err, wants) {
+    if(wants ==  null ) {
+      want.save(function (err) {
+        if (!err) {
+          cb(err,want);
+        } else {
+          cb(err,want);
+        }
+      });
+    }
+    else
+    {
+      wants.created_at =  Date.now()
+      wants.loc = req.body.loc
+      wants.save(function (err) {
+        if (!err) {
+          cb(err,wants);
+        } else {
+          cb(err,wants);
+        }
+      });
+    }
+  });
+}
+
 
 var WantModel = mongoose.model('Want', object);
 var GiveModel = mongoose.model('Give', object);
@@ -56,87 +88,91 @@ app.get('/api', function (req, res) {
   res.send('API is running');
 });
 
+app.get('/auth/twitter', function(req, res){
+
+});
 
 
+app.post('/api/name',function(req,res){
+  tweets.getUserName(req.body.user,"Update",function(){
+    res.send("enjoy....")
+  });
+})
 
 app.post('/api/wants', function (req, res) {
   var want;
   want = new WantModel(req.body);
-  console.log(want);
-  WantModel.findOne({'user.handle': want.user.handle},function (err, wants) {
-    if(wants ==  null ) {
-      wants = new WantModel({
-        user: req.body.user,
-        loc: req.body.loc
-      });
-      wants.save(function (err) {
+  if(want.user.handle == null){
+    tweets.getUserName(want.user,function(error,data){
+      want.user.handle = data["screen_name"]
+      want.update_user('Give',want,req,res,function(err,want){
         if (!err) {
-          return res.send(wants);
+          res.send(want)
         } else {
-          return res.send(err);
+          res.send(err);
         }
       });
-    }
-    else
-    {
-      wants.created_at =  Date.now()
-      wants.loc = req.body.loc
-      wants.save(function (err) {
-        if (!err) {
-          return res.send(wants);
-        } else {
-          return res.send(err);
-        }
-      });
-    }
-  });
+    });
+  }
+  else{
+    want.update_user('Want',want,req,res,function(err,want){
+      if (!err) {
+        res.send(want)
+      } else {
+        res.send(err);
+      }
+    });
+  }
 });
 
 
-// return res.send(wants.findNearByFakirs(wants));
 
 app.post('/api/gives', function (req, res) {
   var give;
   give = new GiveModel(req.body);
-  GiveModel.findOne({'user.handle': give.user.handle},function (err, gives) {
-    if(gives ==  null ) {
-      gives = new GiveModel({
-        user: req.body.user,
-        loc: req.body.loc
-      });
-      gives.save(function (err) {
+
+  give = new GiveModel(req.body);
+  if(give.user.handle == null){
+    tweets.getUserName(give.user,function(error,data){
+      give.user.handle = data["screen_name"]
+      give.update_user('Give',give,req,res,function(err,give){
         if (!err) {
-          return console.log(gives);
+          // console.log(give)
         } else {
-          return console.log(err);
+          // console.log(err);
         }
+        getfakirs(give,res);
       });
-    }
-    else
-    {
-      gives.created_at =  Date.now()
-      gives.loc = req.body.loc
-      gives.save(function (err) {
-        if (!err) {
-          // return console.log(gives);
-        } else {
-          return console.log(err);
-        }
-      });
-    }
-    var start = new Date().subHours(1);
-    var end = new Date();
-    gives.findNearByFakirs(
-      function(err,fakirs){
-        console.log(err);
-        if (!err) {
-          res.send(fakirs)
-        } else {
-          res.send(err)
-        }
-      });
-  });
+    });
+  }
+  else{
+    give.update_user('Give',give,req,res,function(err,give){
+      if (!err) {
+        // console.log(give)
+      } else {
+        // console.log(err);
+      }
+      getfakirs(give,res);
+    });
+  }
+ 
 });
+
+
+var getfakirs = function(give,res){
+   var start = new Date().subHours(1);
+  var end = new Date();
+  give.findNearByFakirs(
+    function(err,fakirs){
+      if (!err) {
+        console.log(fakirs)
+        res.send(fakirs)
+      } else {
+        res.send(err)
+      }
+    });
+}
+
 
 
 

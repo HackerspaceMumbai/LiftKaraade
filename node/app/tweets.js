@@ -2,62 +2,41 @@ var https = require('https');
 var OAuth= require('oauth').OAuth;
 var keys = require('./twitterkeys');
 
+var twitterAPI = require('node-twitter-api');
+var twitter = new twitterAPI({
+	consumerKey: keys.consumerKey,
+	consumerSecret: keys.consumerSecret,
+	callback: null
+});
 
 
-var tweeter = new OAuth(
-  "https://api.twitter.com/oauth/request_token",
-  "https://api.twitter.com/oauth/access_token",
-  keys.consumerKey,
-  keys.consumerSecret,
-  "1.0",
-  null,
-  "HMAC-SHA1”
-);
+exports.getUserName = function(oauth,cb){
+	twitter.getRequestToken(function(error, requestToken, requestTokenSecret, results){
+		if (error) {
+			console.log("Error getting OAuth request token : " + error);
+		} else {
+			twitter.verifyCredentials(oauth.authtoken, oauth.authsecret, function(error, data, response) {
+				console.log(error)
+				if (!error) {
+					cb(null,data);
+				} else {
+					cb(error,data);
+				}
+			});
+		}
+	});
+}
 
-module.exports =
-[ {
-  status:"test1",
-  timestamp: "2011-11-5"
-},{
-  status:"test2",
-  timestamp: "2011-11-7"
-}];
+exports.postUpdate = function(oauth,body,cb){
+	twitter.oa.post("https://api.twitter.com/1/statuses/update.json",
+		oauth.authtoken,oauth.authsecret, {status:"boady"}, "application/json",
+		function (error, data, response) {
+			if (error) {
+				cb(error);
+			} else {
+				console.log('Twitter status updated.\n');
+				console.log(response+'\n')		}	
+				cd(null,response);
+			});
+};	
 
-
-
-var twitterer = new OAuth(
-		   "https://api.twitter.com/oauth/request_token",
-		   "https://api.twitter.com/oauth/access_token",
-		   keys.consumerKey,
-		   keys.ConsumerSecret,
-		   "1.0",
-		   null,
-		   "HMAC-SHA1"
-		  );
-
-var tweets = require('./tweets.js');
-
-var status = tweets[0].status;
-
-var body = ({'status': status});
-
-  // url, oauth_token, oauth_token_secret, post_body, post_content_type, callback
-
-twitterer.post("http://api.twitter.com/1/statuses/update.json",
-	       keys.token, keys.secret, body, "application/json",
-	       function (error, data, response2) {
-		   if(error){
-		       console.log('Error: Something is wrong.\n'+JSON.stringify(error)+'\n');
-		       for (i in response2) {
-			       out = i + ' : ';
-			       try {
-				   out+=response2[i];
-			       } catch(err) {}
-			       out += '/n';
-			       console.log(out);
-			   }
-		   }else{
-		       console.log('Twitter status updated.\n');
-		       console.log(response2+'\n');
-		   }
-	       });
