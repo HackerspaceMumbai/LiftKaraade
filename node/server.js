@@ -135,24 +135,24 @@ app.post('/api/gives', function (req, res) {
   if(give.user.handle == null){
     tweets.getUserName(give.user,function(error,data){
       give.user.handle = data["screen_name"]
-      give.update_user('Give',give,req,res,function(err,give){
+      give.update_user('Give',give,req,res,function(err,fakirs){
         if (!err) {
-          // console.log(give)
+          console.log(fakirs)
         } else {
-          // console.log(err);
+          console.log(err);
         }
         getfakirs(give,res);
       });
     });
   }
   else{
-    give.update_user('Give',give,req,res,function(err,give){
+    give.update_user('Give',give,req,res,function(err,fakirs){
       if (!err) {
-        // console.log(give)
+        console.log(fakirs)
       } else {
-        // console.log(err);
+        console.log(err);
       }
-      getfakirs(give,res);
+        getfakirs(give,res);
     });
   }
  
@@ -166,7 +166,8 @@ var getfakirs = function(give,res){
     function(err,fakirs){
       if (!err) {
         console.log(fakirs)
-        res.send(fakirs)
+        value = new Object({self: give ,fakirs: fakirs});
+        res.send(value)
       } else {
         res.send(err)
       }
