@@ -46,6 +46,7 @@ exports.callWebServiceJSON = function(httpRequest,endpoint, param, callback) {
     xhr.open(httpRequest, endpoint);
     xhr.setRequestHeader("Content-Type", "application/json; charset=utf-8");
     Ti.API.info('url is ' + endpoint);
+    Ti.API.info('parameter is '+param);
     xhr.send(JSON.stringify(param));
 
 }

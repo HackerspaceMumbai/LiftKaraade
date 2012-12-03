@@ -3,15 +3,21 @@
  */
 function liftKaraWin() {
     var webservice = require('/lib/webservice');
-    var endpoint = 'http://192.168.1.25:4242/api/';
+    var config = require('/lib/config');
+    //var settings = new config();
+    var endpoint = 'http://192.168.100.96:4242/api/';
     //Lift karade window
     var liftWin = Ti.UI.createWindow({backgroundColor:'transparent'});
+    
         var liftView = Titanium.UI.createView({
         left: '20dp',
         top: '106dp',
+        borderColor:'black',
+        borderRadius:8,
+        borderWidth:5,
         width: '280dp',
         height: '192dp',
-        backgroundColor: '#ffffff'
+        backgroundColor: '#fb886d'
     });
 
     var destinationText = Titanium.UI.createTextField({
@@ -27,7 +33,7 @@ function liftKaraWin() {
     liftView.add(destinationText);
 
     var liftKaraBtn = Titanium.UI.createButton({
-        left: '30dp',
+        left: '20dp',
         top: '111dp',
         width: '100dp',
         height: '44dp',
@@ -35,8 +41,25 @@ function liftKaraWin() {
         color: '#324f85',
         font: {fontFamily: 'Helvetica-Bold', fontSize: 15}
     });
+    liftKaraBtn.addEventListener('click',function(e){
+        
+       var endpnt = endpoint+'wants';
+       var xyz = config.accessTokenSecret;
+       var verifier=Ti.App.Properties.getString('pin');
+       var param = {'user':{'authtoken':config.accessToken,'authsecret':xyz,'authverifier':verifier },
+                    'loc':{'lat':config.latitude,'lon':config.longitude },
+                    'destination':destinationText.value
+                    };
+       Ti.API.info(param);
+      webservice.callWebServiceJSON('POST',endpnt,param,function(e){
+            liftWin.close();
+         }); 
+    });
+    
+    
+    liftView.add(liftKaraBtn);
     var cancelBtn = Titanium.UI.createButton({
-        left: '130dp',
+        left: '150dp',
         top: '111dp',
         width: '100dp',
         height: '44dp',
@@ -44,28 +67,7 @@ function liftKaraWin() {
         color: '#324f85',
         font: {fontFamily: 'Helvetica-Bold', fontSize: 15}
     });
-    liftKaraBtn.addEventListener('click', function()
-    {
-        var token = Ti.App.Properties.getObject('token');
-        var endpnt = endpoint+'wants';
-        var param = {'user':{'authtoken':token.accessToken,
-                            'authsecret':token.accessTokenSecret},
-                            'loc':{
-                                'lat':Ti.App.Properties.getString('lat'),
-                                'long':Ti.App.Properties.getString('long')
-                                
-                            },
-                            'destination':destinationText.value
-                            }
-                            
-        webservice.callWebServiceJSON('POST',endpnt,param,function(e){
-            Ti.Api.info(JSON.stringify(e));
-        });
-        
-    });
-    liftView.add(liftKaraBtn);
-    
-    cancelBtn.addEventListener('click', function()
+    cancelBtn.addEventListener('click', function(e)
     {
         liftWin.close();
     });

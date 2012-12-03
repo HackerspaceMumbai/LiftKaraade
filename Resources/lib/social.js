@@ -1002,6 +1002,8 @@ var OAuthAdapter = function (pConsumerSecret, pConsumerKey, pSignatureMethod) {
             pin = response.split('<code>')[1].split('</code>')[0];
             destroyAuthorizeUI();
             receivePinCallback();
+            Ti.API.info('pin is '+pin);
+            Ti.App.Properties.setString('pin',pin);
         }
         else {
             loadingView && loadingView.hide();

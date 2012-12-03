@@ -1,7 +1,10 @@
 
 function loginView() {
+    var config = require('/lib/config');
+    //var settings = new config();
     
     var social = require('/lib/social');
+    
     var loginWin = Ti.UI.createWindow();
     var loginView = Titanium.UI.createView({
     width: 320,
@@ -10,7 +13,7 @@ function loginView() {
 });
 
 var appName = Titanium.UI.createLabel({
-    left: 33,
+    left: 20,
     top: 114,
     width: 255,
     height: 78,
@@ -19,14 +22,21 @@ var appName = Titanium.UI.createLabel({
     font: {fontFamily: 'GillSans-Bold', fontSize: 36}
 });
 loginView.add(appName);
+var logo = Titanium.UI.createImageView({
+    top: 114,
+    left:240,
+    width:75,
+    image:'/images/logo.png'
+})
+loginView.add(logo);
 
 var signIn = Titanium.UI.createButton({
-    left: 88,
+    
     top: 253,
-    width: 140,
-    height: 29,
+    width: 249,
+    height: 49,
     color: '#324f85',
-    image: '/images/twitter_signIn.png',
+    image: '/images/twitter_login.png',
     style: Titanium.UI.iPhone.SystemButtonStyle.PLAIN,
     font: {fontFamily: 'Helvetica-Bold', fontSize: 15}
 });
@@ -38,18 +48,24 @@ signIn.addEventListener('click', function()
         consumerSecret: 'eGCBq980enUeApC6WljE0mMjUXMCReZ82fTxMVFRX4' 
     });
     var isAuthorize = twitter.isAuthorized();
-    if(isAuthorize == null)
+    
+    if(!isAuthorize)
     {
         twitter.authorize(function(e) {
-           alert('authorized ');
+           var home = require('/ui/common/homeView').homeView();
+        home.open();
         });
+    //config.accessToken = isAuthorize.accessToken;
+    //config.accessTokenSecret = isAuthorize.accessTokenSecret;
     }
     else
     {
-     Ti.App.Properties.setObject('token',isAuthorize);   
-        Ti.API.info('tokens are '+ JSON.stringify(isAuthorize));
-        var home = require('/ui/common/homeView');
-        new home().open();
+        
+        config.accessToken = isAuthorize.accessToken;
+        config.accessTokenSecret = isAuthorize.accessTokenSecret;
+        
+        var home = require('/ui/common/homeView').homeView();
+         home.open();
     }
    
     //twitter.deauthorize();
